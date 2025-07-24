@@ -1,7 +1,7 @@
 {
   "functions": {
-    "api/*.py": {
-      "runtime": "nodejs18.x"
+    "api/**/*.py": {
+      "runtime": "python3.12"
     }
   },
   "rewrites": [
@@ -15,3 +15,5 @@
     }
   ]
 }
+
+
