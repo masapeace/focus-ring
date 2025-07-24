@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Ring - Debug Version</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .time-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin: 20px 0; }
+        .time-slot { border: 2px solid #ccc; padding: 10px; min-height: 50px; cursor: pointer; text-align: center; background: white; }
+        .time-slot:hover { background-color: #f0f0f0; }
+        .filled { font-weight: bold; color: white; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 3px solid #333; padding: 30px; z-index: 1000; }
+        .category-btn { margin: 5px; padding: 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
+        .debug { background: #ffffcc; padding: 10px; margin: 10px 0; border: 1px solid #ffcc00; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Focus Ring - Debug Version</h1>
+    
+    <div class="debug" id="debug-info">
+        デバッグ情報がここに表示されます
+    </div>
+
+    <h2>📅 タイムグリッド (04:00-23:45)</h2>
+    <div class="time-grid" id="time-grid"></div>
+
+    <!-- カテゴリ選択モーダル -->
+    <div id="category-modal" class="modal">
+        <h3>⏰ <span id="modal-time">04:00</span> のカテゴリ選択</h3>
+        <button onclick="closeCategoryModal()" style="float: right;">×</button>
+        <div id="all-categories"></div>
+    </div>
+
+    <script>
+        const CATEGORIES = [
+            { code: "STUDY", label: "📚 勉強", weight: 3, color: "#4CAF50" },
+            { code: "ENGLISH", label: "🌍 英語", weight: 4, color: "#2196F3" },
+            { code: "WORK_LOG", label: "💼 作業ログ", weight: 4, color: "#FF9800" },
+            { code: "VIDEO", label: "📺 動画", weight: -2, color: "#E91E63" }
+        ];
+
+        let currentDate = new Date().toISOString().split('T')[0];
+        let selectedSlot = null;
+
+        function debug(message) {
+            console.log('🔍 DEBUG:', message);
+            const debugDiv = document.getElementById('debug-info');
+            debugDiv.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+        }
+
+        function formatTime(slotIndex) {
+            const totalMinutes = 4 * 60 + slotIndex * 15;
+            const hours = Math.floor(totalMinutes / 60) % 24;
+            const minutes = totalMinutes % 60;
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+
+        function generateTimeGrid() {
+            debug('グリッド生成開始');
+            const grid = document.getElementById('time-grid');
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < 12; i++) { // 簡略化: 12個のみ
+                const slot = document.createElement('div');
+                slot.className = 'time-slot';
+                slot.textContent = formatTime(i);
+                slot.onclick = () => openCategoryModal(i);
+                grid.appendChild(slot);
+            }
+            debug('グリッド生成完了: 12個のスロット作成');
+        }
+
+        function openCategoryModal(slotIndex) {
+            debug(`モーダル開く: スロット${slotIndex} (${formatTime(slotIndex)})`);
+            selectedSlot = slotIndex;
+            document.getElementById('modal-time').textContent = formatTime(slotIndex);
+            
+            const container = document.getElementById('all-categories');
+            container.innerHTML = '';
+            
+            CATEGORIES.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'category-btn';
+                btn.textContent = cat.label;
+                btn.style.backgroundColor = cat.color;
+                btn.onclick = () => selectCategory(cat.code);
+                container.appendChild(btn);
+                debug(`カテゴリボタン作成: ${cat.label}`);
+            });
+            
+            document.getElementById('category-modal').style.display = 'block';
+            debug('モーダル表示完了');
+        }
+
+        function selectCategory(code) {
+            debug(`カテゴリ選択: ${code} for slot ${selectedSlot}`);
+            
+            // LocalStorage保存をシミュレート
+            const key = `focus_ring_${currentDate}_${selectedSlot}`;
+            const data = { category: code, updated_at: new Date().toISOString() };
+            localStorage.setItem(key, JSON.stringify(data));
+            debug(`LocalStorageに保存: ${key} = ${JSON.stringify(data)}`);
+            
+            // グリッド更新
+            updateTimeGrid();
+            closeCategoryModal();
+            debug('カテゴリ選択完了');
+        }
+
+        function updateTimeGrid() {
+            debug('グリッド更新開始');
+            const slots = document.querySelectorAll('.time-slot');
+            
+            slots.forEach((slot, index) => {
+                const key = `focus_ring_${currentDate}_${index}`;
+                const data = localStorage.getItem(key);
+                
+                if (data) {
+                    const blockData = JSON.parse(data);
+                    const category = CATEGORIES.find(cat => cat.code === blockData.category);
+                    if (category) {
+                        slot.style.backgroundColor = category.color;
+                        slot.style.color = 'white';
+                        slot.textContent = formatTime(index) + '\n' + category.label;
+                        slot.classList.add('filled');
+                        debug(`スロット${index}更新: ${category.label}`);
+                    }
+                } else {
+                    slot.style.backgroundColor = 'white';
+                    slot.style.color = 'black';
+                    slot.textContent = formatTime(index);
+                    slot.classList.remove('filled');
+                }
+            });
+            debug('グリッド更新完了');
+        }
+
+        window.closeCategoryModal = function() {
+            debug('モーダル閉じる');
+            document.getElementById('category-modal').style.display = 'none';
+            selectedSlot = null;
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            debug('アプリ初期化開始');
+            generateTimeGrid();
+            updateTimeGrid();
+            debug('アプリ初期化完了');
+        });
+    </script>
+</body>
+</html>

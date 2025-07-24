@@ -331,6 +331,16 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
+        /* === デバッグ情報 === */
+        .debug {
+            background: #ffffcc;
+            padding: 15px;
+            margin: 15px 0;
+            border: 2px solid #ffcc00;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
         /* === レスポンシブ === */
         @media (max-width: 768px) {
             .content-grid {
@@ -359,6 +369,12 @@
     <!-- メインコンテンツ -->
     <main class="main">
         <div class="container">
+            <!-- デバッグ情報 -->
+            <div class="debug" id="debug-info">
+                <strong>🔍 デバッグ情報:</strong><br>
+                <div id="debug-log">アプリを読み込み中...</div>
+            </div>
+
             <!-- 日付ナビゲーション -->
             <div class="date-nav">
                 <button id="prev-day" class="nav-btn">← 前日</button>
@@ -469,6 +485,15 @@
         // === グローバル変数 ===
         let currentDate = new Date().toISOString().split('T')[0];
         let currentSlotIndex = null;
+        let slotData = {}; // シンプルなデータ保存（ローカルストレージの代わり）
+
+        // === デバッグ関数 ===
+        function debug(message) {
+            console.log('🔍 BEAUTIFUL DEBUG:', message);
+            const debugLog = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog.innerHTML += `<br>${timestamp}: ${message}`;
+        }
 
         // === ユーティリティ関数 ===
         function formatTime(slotIndex) {
@@ -480,21 +505,18 @@
         }
 
         function getStorageKey(date, slotIndex) {
-            return `focus_ring_${date}_${slotIndex}`;
+            return `${date}_${slotIndex}`;
         }
 
         function getBlockData(date, slotIndex) {
             const key = getStorageKey(date, slotIndex);
-            const data = localStorage.getItem(key);
-            return data ? JSON.parse(data) : { category: null, focus: null, memo: null };
+            return slotData[key] || { category: null };
         }
 
         function saveBlockData(date, slotIndex, data) {
             const key = getStorageKey(date, slotIndex);
-            localStorage.setItem(key, JSON.stringify({
-                ...data,
-                updated_at: new Date().toISOString()
-            }));
+            slotData[key] = data;
+            debug(`データ保存: ${key} = ${JSON.stringify(data)}`);
         }
 
         function getCategoryByCode(code) {
@@ -503,6 +525,7 @@
 
         // === UI生成関数 ===
         function generateTimeGrid() {
+            debug('80マスグリッド生成開始');
             const gridContainer = document.getElementById('time-grid');
             gridContainer.innerHTML = '';
 
@@ -510,6 +533,7 @@
                 const timeSlot = document.createElement('div');
                 timeSlot.className = 'time-slot';
                 timeSlot.dataset.slotIndex = i;
+                timeSlot.id = `slot-${i}`;
                 
                 const timeLabel = document.createElement('div');
                 timeLabel.className = 'time-label';
@@ -517,6 +541,7 @@
                 
                 const blockContent = document.createElement('div');
                 blockContent.className = 'block-content';
+                blockContent.id = `content-${i}`;
                 
                 timeSlot.appendChild(timeLabel);
                 timeSlot.appendChild(blockContent);
@@ -526,9 +551,11 @@
                 
                 gridContainer.appendChild(timeSlot);
             }
+            debug('80マスグリッド生成完了');
         }
 
         function generateCategoryLegend() {
+            debug('カテゴリ凡例生成開始');
             const legendContainer = document.getElementById('category-legend');
             legendContainer.innerHTML = '';
 
@@ -553,36 +580,42 @@
                 legendItem.appendChild(weightSpan);
                 legendContainer.appendChild(legendItem);
             });
+            debug('カテゴリ凡例生成完了');
         }
 
         function updateTimeGrid() {
-            const timeSlots = document.querySelectorAll('.time-slot');
+            debug('グリッド表示更新開始');
             let filledCount = 0;
 
-            timeSlots.forEach((slot, index) => {
-                const blockData = getBlockData(currentDate, index);
-                const blockContent = slot.querySelector('.block-content');
+            for (let i = 0; i < 80; i++) {
+                const blockData = getBlockData(currentDate, i);
+                const slot = document.getElementById(`slot-${i}`);
+                const content = document.getElementById(`content-${i}`);
                 
                 if (blockData.category) {
                     filledCount++;
                     const category = getCategoryByCode(blockData.category);
-                    if (category) {
+                    if (category && slot && content) {
                         slot.style.backgroundColor = category.color;
-                        blockContent.textContent = category.label;
+                        content.textContent = category.label;
                         slot.classList.add('filled');
+                        debug(`スロット${i}更新: ${category.label}`);
                     }
                 } else {
-                    slot.style.backgroundColor = '';
-                    blockContent.textContent = '';
-                    slot.classList.remove('filled');
-                    slot.style.color = '';
+                    if (slot && content) {
+                        slot.style.backgroundColor = '';
+                        content.textContent = '';
+                        slot.classList.remove('filled');
+                    }
                 }
-            });
+            }
 
             document.getElementById('filled-count').textContent = filledCount;
+            debug(`グリッド表示更新完了: ${filledCount}/80 入力済み`);
         }
 
-        function calculateDailySummary() {
+        function updateSummary() {
+            debug('サマリ更新開始');
             let productiveBlocks = 0;
             let distractBlocks = 0;
             let focusScore = 0;
@@ -604,25 +637,17 @@
             const distractRatio = totalFilled > 0 ? (distractBlocks / totalFilled) : 0;
             const deepStreak = Math.max(1, Math.ceil(productiveBlocks / 4));
 
-            return {
-                focus_score: focusScore,
-                productive_hours: productiveHours,
-                deep_streak_max: deepStreak,
-                distract_ratio: distractRatio
-            };
-        }
-
-        function updateSummary() {
-            const summary = calculateDailySummary();
+            document.getElementById('focus-score').textContent = focusScore.toFixed(1);
+            document.getElementById('productive-hours').textContent = productiveHours.toFixed(1) + 'h';
+            document.getElementById('deep-streak').textContent = (deepStreak * 15) + '分';
+            document.getElementById('distract-ratio').textContent = (distractRatio * 100).toFixed(0) + '%';
             
-            document.getElementById('focus-score').textContent = summary.focus_score.toFixed(1);
-            document.getElementById('productive-hours').textContent = summary.productive_hours.toFixed(1) + 'h';
-            document.getElementById('deep-streak').textContent = (summary.deep_streak_max * 15) + '分';
-            document.getElementById('distract-ratio').textContent = (summary.distract_ratio * 100).toFixed(0) + '%';
+            debug('サマリ更新完了');
         }
 
         // === モーダル機能 ===
         function openCategoryModal(slotIndex) {
+            debug(`モーダル開く: スロット${slotIndex} (${formatTime(slotIndex)})`);
             currentSlotIndex = slotIndex;
             const modal = document.getElementById('category-modal');
             const timeLabel = document.getElementById('modal-time');
@@ -633,28 +658,39 @@
             const allCategoriesContainer = document.getElementById('all-categories');
             allCategoriesContainer.innerHTML = '';
             
-            CATEGORIES.forEach(category => {
+            CATEGORIES.forEach((category, index) => {
                 const button = document.createElement('button');
                 button.className = 'category-btn';
                 button.style.backgroundColor = category.color;
                 button.textContent = category.label;
-                button.addEventListener('click', () => selectCategory(category.code));
+                button.addEventListener('click', () => {
+                    debug(`カテゴリボタンクリック: ${category.label} (${category.code})`);
+                    selectCategory(category.code);
+                });
                 allCategoriesContainer.appendChild(button);
+                debug(`カテゴリボタン${index + 1}作成: ${category.label}`);
             });
             
             modal.classList.add('active');
+            debug('モーダル表示完了');
         }
 
         function selectCategory(categoryCode) {
+            debug(`カテゴリ選択開始: ${categoryCode} for slot ${currentSlotIndex}`);
+            
             if (currentSlotIndex !== null) {
                 saveBlockData(currentDate, currentSlotIndex, { category: categoryCode });
                 updateTimeGrid();
                 updateSummary();
                 closeCategoryModal();
+                debug('✅ カテゴリ選択完了');
+            } else {
+                debug('❌ エラー: currentSlotIndex が null');
             }
         }
 
         function closeCategoryModal() {
+            debug('モーダル閉じる');
             document.getElementById('category-modal').classList.remove('active');
             currentSlotIndex = null;
         }
@@ -665,6 +701,8 @@
 
         // === イベントハンドラー ===
         function initializeEventHandlers() {
+            debug('イベントハンドラー設定開始');
+            
             // 日付ナビゲーション
             document.getElementById('prev-day').addEventListener('click', () => {
                 const date = new Date(currentDate);
@@ -707,11 +745,13 @@
                     closeCategoryModal();
                 }
             });
+            
+            debug('イベントハンドラー設定完了');
         }
 
         // === 初期化 ===
         function initializeApp() {
-            console.log('🎯 Focus Ring Complete Version Loading...');
+            debug('🎯 Beautiful Focus Ring 初期化開始');
             
             // UI生成
             generateTimeGrid();
@@ -725,7 +765,7 @@
             updateTimeGrid();
             updateSummary();
             
-            console.log('✅ Focus Ring Complete Version Ready!');
+            debug('✅ Beautiful Focus Ring 初期化完了 - テスト準備OK!');
         }
 
         // === アプリケーション起動 ===

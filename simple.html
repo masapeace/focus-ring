@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Ring - Simple Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f0f0f0; }
+        .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
+        .time-slot { 
+            border: 3px solid #333; 
+            padding: 20px; 
+            min-height: 80px; 
+            cursor: pointer; 
+            text-align: center; 
+            background: white;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .time-slot:hover { background-color: #e0e0e0; }
+        .filled { color: white; }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            background: white; 
+            border: 5px solid #333; 
+            padding: 40px; 
+            z-index: 1000;
+            border-radius: 15px;
+        }
+        .category-btn { 
+            margin: 10px; 
+            padding: 20px 25px; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            color: white; 
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .debug { background: #ffffcc; padding: 15px; margin: 15px 0; border: 2px solid #ffcc00; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Focus Ring - Simple Test</h1>
+    
+    <div class="debug" id="debug-info">
+        <strong>デバッグ情報:</strong><br>
+        <div id="debug-log">アプリを読み込み中...</div>
+    </div>
+
+    <h2>📅 タイムグリッド (簡易版)</h2>
+    <div class="time-grid" id="time-grid"></div>
+
+    <!-- カテゴリ選択モーダル -->
+    <div id="category-modal" class="modal">
+        <h3>⏰ <span id="modal-time">04:00</span> のカテゴリ選択</h3>
+        <button onclick="closeCategoryModal()" style="float: right; font-size: 20px;">×</button>
+        <br><br>
+        <div id="all-categories"></div>
+    </div>
+
+    <script>
+        const CATEGORIES = [
+            { code: "STUDY", label: "📚 勉強", color: "#4CAF50" },
+            { code: "WORK", label: "💼 作業", color: "#FF9800" },
+            { code: "REST", label: "😴 休憩", color: "#CDDC39" },
+            { code: "VIDEO", label: "📺 動画", color: "#E91E63" }
+        ];
+
+        let selectedSlot = null;
+        let slotData = {}; // シンプルなデータ保存
+
+        function debug(message) {
+            console.log('🔍 SIMPLE DEBUG:', message);
+            const debugLog = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog.innerHTML += `<br>${timestamp}: ${message}`;
+        }
+
+        function formatTime(slotIndex) {
+            const hours = 4 + Math.floor(slotIndex / 4);
+            const minutes = (slotIndex % 4) * 15;
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+
+        function generateTimeGrid() {
+            debug('グリッド生成開始');
+            const grid = document.getElementById('time-grid');
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < 8; i++) { // 8個のスロット（04:00-05:45）
+                const slot = document.createElement('div');
+                slot.className = 'time-slot';
+                slot.id = `slot-${i}`;
+                slot.innerHTML = `<div>${formatTime(i)}</div><div id="content-${i}"></div>`;
+                slot.onclick = () => openCategoryModal(i);
+                grid.appendChild(slot);
+            }
+            debug('グリッド生成完了: 8個のスロット作成');
+        }
+
+        function openCategoryModal(slotIndex) {
+            debug(`モーダル開く: スロット${slotIndex} (${formatTime(slotIndex)})`);
+            selectedSlot = slotIndex;
+            
+            document.getElementById('modal-time').textContent = formatTime(slotIndex);
+            
+            const container = document.getElementById('all-categories');
+            container.innerHTML = '';
+            
+            CATEGORIES.forEach((cat, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'category-btn';
+                btn.textContent = cat.label;
+                btn.style.backgroundColor = cat.color;
+                btn.onclick = () => {
+                    debug(`カテゴリボタンクリック: ${cat.label} (${cat.code})`);
+                    selectCategory(cat.code);
+                };
+                container.appendChild(btn);
+                debug(`カテゴリボタン${index + 1}作成: ${cat.label}`);
+            });
+            
+            document.getElementById('category-modal').style.display = 'block';
+            debug('モーダル表示完了');
+        }
+
+        function selectCategory(code) {
+            debug(`カテゴリ選択開始: ${code} for slot ${selectedSlot}`);
+            
+            if (selectedSlot === null) {
+                debug('❌ エラー: selectedSlot が null');
+                return;
+            }
+            
+            // データ保存
+            slotData[selectedSlot] = code;
+            debug(`データ保存: slot${selectedSlot} = ${code}`);
+            
+            // 表示更新
+            updateSlotDisplay(selectedSlot, code);
+            
+            // モーダル閉じる
+            closeCategoryModal();
+            debug('✅ カテゴリ選択完了');
+        }
+
+        function updateSlotDisplay(slotIndex, categoryCode) {
+            debug(`表示更新開始: slot${slotIndex}, category${categoryCode}`);
+            
+            const slot = document.getElementById(`slot-${slotIndex}`);
+            const content = document.getElementById(`content-${slotIndex}`);
+            const category = CATEGORIES.find(cat => cat.code === categoryCode);
+            
+            if (slot && content && category) {
+                slot.style.backgroundColor = category.color;
+                slot.classList.add('filled');
+                content.textContent = category.label;
+                debug(`✅ 表示更新成功: ${category.label}`);
+            } else {
+                debug(`❌ 表示更新失敗: slot=${!!slot}, content=${!!content}, category=${!!category}`);
+            }
+        }
+
+        window.closeCategoryModal = function() {
+            debug('モーダル閉じる');
+            document.getElementById('category-modal').style.display = 'none';
+            selectedSlot = null;
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            debug('アプリ初期化開始');
+            generateTimeGrid();
+            debug('アプリ初期化完了 - テスト準備OK!');
+        });
+    </script>
+</body>
+</html>

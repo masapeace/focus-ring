@@ -1,0 +1,9 @@
+{
+  "name": "focus-ring-simple-test",
+  "version": "2.0.0",
+  "description": "Focus Ring Simple Test Version",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "deploy": "vercel --prod"
+  }
+}
