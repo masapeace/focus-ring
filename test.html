@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Ring - Test Version</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .time-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; margin: 20px 0; }
+        .time-slot { border: 1px solid #ccc; padding: 5px; min-height: 40px; cursor: pointer; }
+        .time-slot:hover { background-color: #f0f0f0; }
+        .filled { font-weight: bold; }
+        .legend-item { display: inline-block; margin: 5px; padding: 3px 6px; border-radius: 3px; color: white; }
+        .summary { background: #f5f5f5; padding: 15px; margin: 20px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Focus Ring - Test Version</h1>
+    
+    <div>
+        <button id="prev-day">←</button>
+        <span id="current-date">2025-01-01</span>
+        <button id="next-day">→</button>
+        <button id="today-btn">今日</button>
+    </div>
+
+    <h2>📅 タイムグリッド (04:00-23:45)</h2>
+    <div><span id="filled-count">0</span>/80 ブロック入力済み</div>
+    <div class="time-grid" id="time-grid"></div>
+
+    <h2>📋 カテゴリ凡例</h2>
+    <div id="category-legend"></div>
+
+    <div class="summary">
+        <h3>📊 今日のサマリ</h3>
+        <div>フォーカススコア: <span id="focus-score">0.0</span></div>
+        <div>生産的時間: <span id="productive-hours">0.0h</span></div>
+        <div>最大連続集中: <span id="deep-streak">0分</span></div>
+        <div>妨害時間割合: <span id="distract-ratio">0%</span></div>
+    </div>
+
+    <!-- カテゴリ選択モーダル（簡易版） -->
+    <div id="category-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 2px solid #ccc; padding: 20px; z-index: 1000;">
+        <h3>⏰ <span id="modal-time">04:00</span> のカテゴリ選択</h3>
+        <button onclick="closeCategoryModal()">×</button>
+        <div id="all-categories"></div>
+    </div>
+
+    <!-- 詳細編集モーダル（簡易版） -->
+    <div id="detail-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 2px solid #ccc; padding: 20px; z-index: 1000;">
+        <h3>📝 <span id="detail-time">04:00</span> の詳細編集</h3>
+        <button onclick="closeDetailModal()">×</button>
+        <div>
+            <label>カテゴリ:</label>
+            <select id="detail-category">
+                <option value="">未選択</option>
+            </select>
+        </div>
+        <div>
+            <label>メモ:</label>
+            <textarea id="detail-memo" rows="3"></textarea>
+        </div>
+        <button id="detail-save">💾 保存</button>
+    </div>
+
+    <script>
+        // 簡易版のスクリプトを直接埋め込み
+        const CATEGORIES = [
+            { code: "STUDY", label: "📚 勉強", weight: 3, color: "#4CAF50" },
+            { code: "ENGLISH", label: "🌍 英語", weight: 4, color: "#2196F3" },
+            { code: "WORK_LOG", label: "💼 作業ログ", weight: 4, color: "#FF9800" },
+            { code: "VIDEO", label: "📺 動画", weight: -2, color: "#E91E63" },
+            { code: "SNS", label: "📱 SNS", weight: -3, color: "#FF5722" }
+        ];
+
+        let currentDate = new Date().toISOString().split('T')[0];
+        let selectedSlot = null;
+
+        function formatTime(slotIndex) {
+            const totalMinutes = 4 * 60 + slotIndex * 15;
+            const hours = Math.floor(totalMinutes / 60) % 24;
+            const minutes = totalMinutes % 60;
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+
+        function generateTimeGrid() {
+            const grid = document.getElementById('time-grid');
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < 80; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'time-slot';
+                slot.textContent = formatTime(i);
+                slot.onclick = () => openCategoryModal(i);
+                grid.appendChild(slot);
+            }
+        }
+
+        function generateCategoryLegend() {
+            const legend = document.getElementById('category-legend');
+            legend.innerHTML = '';
+            
+            CATEGORIES.forEach(cat => {
+                const item = document.createElement('span');
+                item.className = 'legend-item';
+                item.style.backgroundColor = cat.color;
+                item.textContent = cat.label + ' (' + (cat.weight > 0 ? '+' : '') + cat.weight + ')';
+                legend.appendChild(item);
+            });
+        }
+
+        function openCategoryModal(slotIndex) {
+            selectedSlot = slotIndex;
+            document.getElementById('modal-time').textContent = formatTime(slotIndex);
+            
+            const container = document.getElementById('all-categories');
+            container.innerHTML = '';
+            
+            CATEGORIES.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.textContent = cat.label;
+                btn.style.backgroundColor = cat.color;
+                btn.style.color = 'white';
+                btn.style.margin = '5px';
+                btn.onclick = () => selectCategory(cat.code);
+                container.appendChild(btn);
+            });
+            
+            document.getElementById('category-modal').style.display = 'block';
+        }
+
+        function selectCategory(code) {
+            alert('カテゴリ ' + code + ' を選択しました（スロット' + selectedSlot + '）');
+            closeCategoryModal();
+        }
+
+        window.closeCategoryModal = function() {
+            document.getElementById('category-modal').style.display = 'none';
+        }
+
+        window.closeDetailModal = function() {
+            document.getElementById('detail-modal').style.display = 'none';
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 Focus Ring Test Version Loading...');
+            
+            document.getElementById('current-date').textContent = currentDate;
+            generateTimeGrid();
+            generateCategoryLegend();
+            
+            console.log('✅ Focus Ring Test Version Ready!');
+        });
+    </script>
+</body>
+</html>
