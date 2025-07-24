@@ -130,8 +130,38 @@
         }
 
         function selectCategory(code) {
-            alert('カテゴリ ' + code + ' を選択しました（スロット' + selectedSlot + '）');
+            if (selectedSlot !== null) {
+                // 選択されたマスを取得
+                const slots = document.querySelectorAll('.time-slot');
+                const selectedSlotElement = slots[selectedSlot];
+                
+                // カテゴリ情報を取得
+                const category = CATEGORIES.find(cat => cat.code === code);
+                
+                if (category && selectedSlotElement) {
+                    // マスに色と文字を設定
+                    selectedSlotElement.style.backgroundColor = category.color;
+                    selectedSlotElement.style.color = 'white';
+                    selectedSlotElement.textContent = `${formatTime(selectedSlot)} ${category.label}`;
+                    selectedSlotElement.classList.add('filled');
+                    
+                    // データをローカルストレージに保存
+                    const key = `focus_ring_${currentDate}_${selectedSlot}`;
+                    localStorage.setItem(key, JSON.stringify({
+                        category: code,
+                        updated_at: new Date().toISOString()
+                    }));
+                    
+                    // 入力済みカウントを更新
+                    updateFilledCount();
+                }
+            }
             closeCategoryModal();
+        }
+        
+        function updateFilledCount() {
+            const filledSlots = document.querySelectorAll('.time-slot.filled');
+            document.getElementById('filled-count').textContent = filledSlots.length;
         }
 
         window.closeCategoryModal = function() {
