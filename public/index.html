@@ -3,185 +3,742 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Focus Ring - Test Version</title>
+    <title>Focus Ring - 1日行動×集中タイムトラッカー</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .time-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; margin: 20px 0; }
-        .time-slot { border: 1px solid #ccc; padding: 5px; min-height: 40px; cursor: pointer; }
-        .time-slot:hover { background-color: #f0f0f0; }
-        .filled { font-weight: bold; }
-        .legend-item { display: inline-block; margin: 5px; padding: 3px 6px; border-radius: 3px; color: white; }
-        .summary { background: #f5f5f5; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        /* === 基本スタイル === */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* === ヘッダー === */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 0;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* === 日付ナビゲーション === */
+        .date-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .nav-btn, .today-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .nav-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .today-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .nav-btn:hover, .today-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .date-display {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #current-date {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* === コンテンツグリッド === */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        /* === 左パネル === */
+        .left-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .grid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .grid-header h2 {
+            color: #333;
+            font-size: 1.3rem;
+        }
+
+        .grid-stats {
+            background: #f8f9fa;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        /* === タイムグリッド === */
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 3px;
+            margin-bottom: 25px;
+        }
+
+        .time-slot {
+            aspect-ratio: 1;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            position: relative;
+            min-height: 60px;
+        }
+
+        .time-slot:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .time-label {
+            font-size: 0.7rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .block-content {
+            font-size: 0.6rem;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 2px;
+        }
+
+        .time-slot.filled {
+            color: white;
+            border-color: transparent;
+        }
+
+        /* === カテゴリ凡例 === */
+        .category-legend h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: #f8f9fa;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+
+        .legend-label {
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .legend-weight {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #666;
+        }
+
+        /* === 右パネル === */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .summary-card, .chart-card, .suggestions-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .summary-card h3, .chart-card h3, .suggestions-card h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        /* === サマリグリッド === */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        /* === モーダル === */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        /* === カテゴリボタン === */
+        .category-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .category-btn {
+            padding: 12px 8px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .category-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        /* === レスポンシブ === */
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .time-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>🎯 Focus Ring - Test Version</h1>
-    
-    <div>
-        <button id="prev-day">←</button>
-        <span id="current-date">2025-01-01</span>
-        <button id="next-day">→</button>
-        <button id="today-btn">今日</button>
-    </div>
-
-    <h2>📅 タイムグリッド (04:00-23:45)</h2>
-    <div><span id="filled-count">0</span>/80 ブロック入力済み</div>
-    <div class="time-grid" id="time-grid"></div>
-
-    <h2>📋 カテゴリ凡例</h2>
-    <div id="category-legend"></div>
-
-    <div class="summary">
-        <h3>📊 今日のサマリ</h3>
-        <div>フォーカススコア: <span id="focus-score">0.0</span></div>
-        <div>生産的時間: <span id="productive-hours">0.0h</span></div>
-        <div>最大連続集中: <span id="deep-streak">0分</span></div>
-        <div>妨害時間割合: <span id="distract-ratio">0%</span></div>
-    </div>
-
-    <!-- カテゴリ選択モーダル（簡易版） -->
-    <div id="category-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 2px solid #ccc; padding: 20px; z-index: 1000;">
-        <h3>⏰ <span id="modal-time">04:00</span> のカテゴリ選択</h3>
-        <button onclick="closeCategoryModal()">×</button>
-        <div id="all-categories"></div>
-    </div>
-
-    <!-- 詳細編集モーダル（簡易版） -->
-    <div id="detail-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 2px solid #ccc; padding: 20px; z-index: 1000;">
-        <h3>📝 <span id="detail-time">04:00</span> の詳細編集</h3>
-        <button onclick="closeDetailModal()">×</button>
-        <div>
-            <label>カテゴリ:</label>
-            <select id="detail-category">
-                <option value="">未選択</option>
-            </select>
+    <!-- ヘッダー -->
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">🎯 Focus Ring</h1>
+            <p class="tagline">1日行動×集中タイムトラッカー</p>
         </div>
-        <div>
-            <label>メモ:</label>
-            <textarea id="detail-memo" rows="3"></textarea>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main">
+        <div class="container">
+            <!-- 日付ナビゲーション -->
+            <div class="date-nav">
+                <button id="prev-day" class="nav-btn">← 前日</button>
+                <div class="date-display">
+                    <span id="current-date">2024-01-01</span>
+                    <button id="today-btn" class="today-btn">今日</button>
+                </div>
+                <button id="next-day" class="nav-btn">翌日 →</button>
+            </div>
+
+            <!-- 2カラムレイアウト -->
+            <div class="content-grid">
+                <!-- 左側：タイムグリッド -->
+                <div class="left-panel">
+                    <div class="grid-header">
+                        <h2>📅 タイムグリッド (04:00-23:45)</h2>
+                        <div class="grid-stats">
+                            <span id="filled-count">0</span>/80 ブロック入力済み
+                        </div>
+                    </div>
+
+                    <!-- 80マスグリッド -->
+                    <div class="time-grid" id="time-grid">
+                        <!-- JavaScriptで動的生成 -->
+                    </div>
+
+                    <!-- カテゴリ凡例 -->
+                    <div class="category-legend">
+                        <h3>📋 カテゴリ凡例</h3>
+                        <div class="legend-grid" id="category-legend">
+                            <!-- JavaScriptで動的生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側：サマリパネル -->
+                <div class="right-panel">
+                    <!-- 今日のサマリ -->
+                    <div class="summary-card">
+                        <h3>📊 今日のサマリ</h3>
+                        <div class="summary-grid">
+                            <div class="metric">
+                                <div class="metric-value" id="focus-score">0.0</div>
+                                <div class="metric-label">フォーカススコア</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="productive-hours">0.0h</div>
+                                <div class="metric-label">生産的時間</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="deep-streak">0分</div>
+                                <div class="metric-label">最大連続集中</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="distract-ratio">0%</div>
+                                <div class="metric-label">妨害時間割合</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 改善提案 -->
+                    <div class="suggestions-card">
+                        <h3>💡 改善提案</h3>
+                        <div class="suggestions-content">
+                            <div class="summary-text" id="suggestion-summary">
+                                データを入力すると改善提案が表示されます
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <button id="detail-save">💾 保存</button>
+    </main>
+
+    <!-- カテゴリ選択モーダル -->
+    <div class="modal" id="category-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⏰ <span id="modal-time">04:00</span> のカテゴリ選択</h3>
+                <button class="modal-close" id="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- 全カテゴリ -->
+                <div class="all-categories">
+                    <h4>📂 カテゴリ一覧</h4>
+                    <div class="category-buttons" id="all-categories">
+                        <!-- JavaScriptで動的生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // 簡易版のスクリプトを直接埋め込み
+        // === カテゴリ定義 ===
         const CATEGORIES = [
-            { code: "STUDY", label: "📚 勉強", weight: 3, color: "#4CAF50" },
-            { code: "ENGLISH", label: "🌍 英語", weight: 4, color: "#2196F3" },
-            { code: "WORK_LOG", label: "💼 作業ログ", weight: 4, color: "#FF9800" },
-            { code: "VIDEO", label: "📺 動画", weight: -2, color: "#E91E63" },
-            { code: "SNS", label: "📱 SNS", weight: -3, color: "#FF5722" }
+            { code: "STUDY", label: "📚 勉強", weight: 3, color: "#4CAF50", order_index: 0 },
+            { code: "ENGLISH", label: "🌍 英語", weight: 4, color: "#2196F3", order_index: 1 },
+            { code: "AI_LEARNING", label: "🤖 AI学習", weight: 4, color: "#9C27B0", order_index: 2 },
+            { code: "WORK_LOG", label: "💼 作業ログ", weight: 4, color: "#FF9800", order_index: 3 },
+            { code: "BLOG", label: "✍️ ブログ", weight: 3, color: "#795548", order_index: 4 },
+            { code: "WALK", label: "🐕 散歩", weight: 2, color: "#8BC34A", order_index: 5 },
+            { code: "FARMING", label: "🌱 農作業", weight: 2, color: "#4CAF50", order_index: 6 },
+            { code: "HOUSEWORK", label: "🏠 家事", weight: 1, color: "#607D8B", order_index: 7 },
+            { code: "MANAGEMENT", label: "📋 管理", weight: 1, color: "#9E9E9E", order_index: 8 },
+            { code: "HEALTH", label: "💪 健康", weight: 2, color: "#F44336", order_index: 9 },
+            { code: "MEAL", label: "🍽️ 食事", weight: 0, color: "#FFC107", order_index: 10 },
+            { code: "REST", label: "😴 休憩", weight: 0, color: "#CDDC39", order_index: 11 },
+            { code: "SLEEP", label: "🛏️ 睡眠", weight: 0, color: "#3F51B5", order_index: 12 },
+            { code: "VIDEO", label: "📺 動画", weight: -2, color: "#E91E63", order_index: 13 },
+            { code: "SNS", label: "📱 SNS", weight: -3, color: "#FF5722", order_index: 14 },
+            { code: "WASTE", label: "❓ 無駄時間", weight: -4, color: "#424242", order_index: 15 }
         ];
 
+        // === グローバル変数 ===
         let currentDate = new Date().toISOString().split('T')[0];
-        let selectedSlot = null;
+        let dayData = [];
+        let currentSlotIndex = null;
 
+        // === ユーティリティ関数 ===
         function formatTime(slotIndex) {
-            const totalMinutes = 4 * 60 + slotIndex * 15;
+            const startHour = 4;
+            const totalMinutes = startHour * 60 + slotIndex * 15;
             const hours = Math.floor(totalMinutes / 60) % 24;
             const minutes = totalMinutes % 60;
             return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
         }
 
+        function getStorageKey(date, slotIndex) {
+            return `focus_ring_${date}_${slotIndex}`;
+        }
+
+        function getBlockData(date, slotIndex) {
+            const key = getStorageKey(date, slotIndex);
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : { category: null, focus: null, memo: null };
+        }
+
+        function saveBlockData(date, slotIndex, data) {
+            const key = getStorageKey(date, slotIndex);
+            localStorage.setItem(key, JSON.stringify({
+                ...data,
+                updated_at: new Date().toISOString()
+            }));
+        }
+
+        function getCategoryByCode(code) {
+            return CATEGORIES.find(cat => cat.code === code);
+        }
+
+        // === UI生成関数 ===
         function generateTimeGrid() {
-            const grid = document.getElementById('time-grid');
-            grid.innerHTML = '';
-            
+            const gridContainer = document.getElementById('time-grid');
+            gridContainer.innerHTML = '';
+
             for (let i = 0; i < 80; i++) {
-                const slot = document.createElement('div');
-                slot.className = 'time-slot';
-                slot.textContent = formatTime(i);
-                slot.onclick = () => openCategoryModal(i);
-                grid.appendChild(slot);
+                const timeSlot = document.createElement('div');
+                timeSlot.className = 'time-slot';
+                timeSlot.dataset.slotIndex = i;
+                
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'time-label';
+                timeLabel.textContent = formatTime(i);
+                
+                const blockContent = document.createElement('div');
+                blockContent.className = 'block-content';
+                
+                timeSlot.appendChild(timeLabel);
+                timeSlot.appendChild(blockContent);
+                
+                // クリックイベント
+                timeSlot.addEventListener('click', () => openCategoryModal(i));
+                
+                gridContainer.appendChild(timeSlot);
             }
         }
 
         function generateCategoryLegend() {
-            const legend = document.getElementById('category-legend');
-            legend.innerHTML = '';
-            
-            CATEGORIES.forEach(cat => {
-                const item = document.createElement('span');
-                item.className = 'legend-item';
-                item.style.backgroundColor = cat.color;
-                item.textContent = cat.label + ' (' + (cat.weight > 0 ? '+' : '') + cat.weight + ')';
-                legend.appendChild(item);
+            const legendContainer = document.getElementById('category-legend');
+            legendContainer.innerHTML = '';
+
+            CATEGORIES.forEach(category => {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                
+                const colorDiv = document.createElement('div');
+                colorDiv.className = 'legend-color';
+                colorDiv.style.backgroundColor = category.color;
+                
+                const labelSpan = document.createElement('span');
+                labelSpan.className = 'legend-label';
+                labelSpan.textContent = category.label;
+                
+                const weightSpan = document.createElement('span');
+                weightSpan.className = 'legend-weight';
+                weightSpan.textContent = `(${category.weight > 0 ? '+' : ''}${category.weight})`;
+                
+                legendItem.appendChild(colorDiv);
+                legendItem.appendChild(labelSpan);
+                legendItem.appendChild(weightSpan);
+                legendContainer.appendChild(legendItem);
             });
         }
 
-        function openCategoryModal(slotIndex) {
-            selectedSlot = slotIndex;
-            document.getElementById('modal-time').textContent = formatTime(slotIndex);
-            
-            const container = document.getElementById('all-categories');
-            container.innerHTML = '';
-            
-            CATEGORIES.forEach(cat => {
-                const btn = document.createElement('button');
-                btn.textContent = cat.label;
-                btn.style.backgroundColor = cat.color;
-                btn.style.color = 'white';
-                btn.style.margin = '5px';
-                btn.onclick = () => selectCategory(cat.code);
-                container.appendChild(btn);
+        function updateTimeGrid() {
+            const timeSlots = document.querySelectorAll('.time-slot');
+            let filledCount = 0;
+
+            timeSlots.forEach((slot, index) => {
+                const blockData = getBlockData(currentDate, index);
+                const blockContent = slot.querySelector('.block-content');
+                
+                if (blockData.category) {
+                    filledCount++;
+                    const category = getCategoryByCode(blockData.category);
+                    if (category) {
+                        slot.style.backgroundColor = category.color;
+                        blockContent.textContent = category.label;
+                        slot.classList.add('filled');
+                    }
+                } else {
+                    slot.style.backgroundColor = '';
+                    blockContent.textContent = '';
+                    slot.classList.remove('filled');
+                    slot.style.color = '';
+                }
             });
-            
-            document.getElementById('category-modal').style.display = 'block';
+
+            document.getElementById('filled-count').textContent = filledCount;
         }
 
-        function selectCategory(code) {
-            if (selectedSlot !== null) {
-                // 選択されたマスを取得
-                const slots = document.querySelectorAll('.time-slot');
-                const selectedSlotElement = slots[selectedSlot];
-                
-                // カテゴリ情報を取得
-                const category = CATEGORIES.find(cat => cat.code === code);
-                
-                if (category && selectedSlotElement) {
-                    // マスに色と文字を設定
-                    selectedSlotElement.style.backgroundColor = category.color;
-                    selectedSlotElement.style.color = 'white';
-                    selectedSlotElement.textContent = `${formatTime(selectedSlot)} ${category.label}`;
-                    selectedSlotElement.classList.add('filled');
-                    
-                    // データをローカルストレージに保存
-                    const key = `focus_ring_${currentDate}_${selectedSlot}`;
-                    localStorage.setItem(key, JSON.stringify({
-                        category: code,
-                        updated_at: new Date().toISOString()
-                    }));
-                    
-                    // 入力済みカウントを更新
-                    updateFilledCount();
+        function calculateDailySummary() {
+            let productiveBlocks = 0;
+            let distractBlocks = 0;
+            let focusScore = 0;
+
+            for (let i = 0; i < 80; i++) {
+                const blockData = getBlockData(currentDate, i);
+                if (blockData.category) {
+                    const category = getCategoryByCode(blockData.category);
+                    if (category) {
+                        if (category.weight > 0) productiveBlocks++;
+                        if (category.weight < 0) distractBlocks++;
+                        focusScore += category.weight;
+                    }
                 }
             }
-            closeCategoryModal();
-        }
-        
-        function updateFilledCount() {
-            const filledSlots = document.querySelectorAll('.time-slot.filled');
-            document.getElementById('filled-count').textContent = filledSlots.length;
+
+            const totalFilled = productiveBlocks + distractBlocks;
+            const productiveHours = productiveBlocks * 0.25;
+            const distractRatio = totalFilled > 0 ? (distractBlocks / totalFilled) : 0;
+            const deepStreak = Math.max(1, Math.ceil(productiveBlocks / 4));
+
+            return {
+                focus_score: focusScore,
+                productive_hours: productiveHours,
+                deep_streak_max: deepStreak,
+                distract_ratio: distractRatio
+            };
         }
 
-        window.closeCategoryModal = function() {
-            document.getElementById('category-modal').style.display = 'none';
-        }
-
-        window.closeDetailModal = function() {
-            document.getElementById('detail-modal').style.display = 'none';
-        }
-
-        // 初期化
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🎯 Focus Ring Test Version Loading...');
+        function updateSummary() {
+            const summary = calculateDailySummary();
             
+            document.getElementById('focus-score').textContent = summary.focus_score.toFixed(1);
+            document.getElementById('productive-hours').textContent = summary.productive_hours.toFixed(1) + 'h';
+            document.getElementById('deep-streak').textContent = (summary.deep_streak_max * 15) + '分';
+            document.getElementById('distract-ratio').textContent = (summary.distract_ratio * 100).toFixed(0) + '%';
+        }
+
+        // === モーダル機能 ===
+        function openCategoryModal(slotIndex) {
+            currentSlotIndex = slotIndex;
+            const modal = document.getElementById('category-modal');
+            const timeLabel = document.getElementById('modal-time');
+            
+            timeLabel.textContent = formatTime(slotIndex);
+            
+            // カテゴリボタン生成
+            const allCategoriesContainer = document.getElementById('all-categories');
+            allCategoriesContainer.innerHTML = '';
+            
+            CATEGORIES.forEach(category => {
+                const button = document.createElement('button');
+                button.className = 'category-btn';
+                button.style.backgroundColor = category.color;
+                button.textContent = category.label;
+                button.addEventListener('click', () => selectCategory(category.code));
+                allCategoriesContainer.appendChild(button);
+            });
+            
+            modal.classList.add('active');
+        }
+
+        function selectCategory(categoryCode) {
+            if (currentSlotIndex !== null) {
+                saveBlockData(currentDate, currentSlotIndex, { category: categoryCode });
+                updateTimeGrid();
+                updateSummary();
+                closeCategoryModal();
+            }
+        }
+
+        function closeCategoryModal() {
+            document.getElementById('category-modal').classList.remove('active');
+            currentSlotIndex = null;
+        }
+
+        function updateCurrentDate() {
             document.getElementById('current-date').textContent = currentDate;
+        }
+
+        // === イベントハンドラー ===
+        function initializeEventHandlers() {
+            // 日付ナビゲーション
+            document.getElementById('prev-day').addEventListener('click', () => {
+                const date = new Date(currentDate);
+                date.setDate(date.getDate() - 1);
+                currentDate = date.toISOString().split('T')[0];
+                updateCurrentDate();
+                updateTimeGrid();
+                updateSummary();
+            });
+            
+            document.getElementById('next-day').addEventListener('click', () => {
+                const date = new Date(currentDate);
+                date.setDate(date.getDate() + 1);
+                currentDate = date.toISOString().split('T')[0];
+                updateCurrentDate();
+                updateTimeGrid();
+                updateSummary();
+            });
+            
+            document.getElementById('today-btn').addEventListener('click', () => {
+                currentDate = new Date().toISOString().split('T')[0];
+                updateCurrentDate();
+                updateTimeGrid();
+                updateSummary();
+            });
+            
+            // モーダル閉じる
+            document.getElementById('modal-close').addEventListener('click', closeCategoryModal);
+            
+            // モーダル外クリックで閉じる
+            document.getElementById('category-modal').addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal')) {
+                    closeCategoryModal();
+                }
+            });
+            
+            // ESCキーでモーダルを閉じる
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeCategoryModal();
+                }
+            });
+        }
+
+        // === 初期化 ===
+        function initializeApp() {
+            console.log('🎯 Focus Ring Complete Version Loading...');
+            
+            // UI生成
             generateTimeGrid();
             generateCategoryLegend();
             
-            console.log('✅ Focus Ring Test Version Ready!');
-        });
+            // イベントハンドラー設定
+            initializeEventHandlers();
+            
+            // 初期データ表示
+            updateCurrentDate();
+            updateTimeGrid();
+            updateSummary();
+            
+            console.log('✅ Focus Ring Complete Version Ready!');
+        }
+
+        // === アプリケーション起動 ===
+        document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
 </html>
