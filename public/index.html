@@ -3,53 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Focus Ring - 1日行動×集中タイムトラッカー</title>
+    <title>Focus Ring - Test Version</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; margin: -20px -20px 20px -20px; text-align: center; }
+        body { font-family: Arial, sans-serif; margin: 20px; }
         .time-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; margin: 20px 0; }
-        .time-slot { border: 1px solid #ddd; padding: 8px 4px; min-height: 50px; cursor: pointer; background: white; border-radius: 4px; transition: all 0.2s; text-align: center; font-size: 11px; }
-        .time-slot:hover { background-color: #e3f2fd; transform: scale(1.02); }
-        .time-slot.filled { font-weight: bold; color: white; }
-        .legend-item { display: inline-block; margin: 5px; padding: 5px 10px; border-radius: 5px; color: white; font-size: 12px; }
-        .summary { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-        .metric { text-align: center; padding: 10px; background: #f5f5f5; border-radius: 5px; }
-        .metric-value { font-size: 24px; font-weight: bold; color: #333; }
-        .metric-label { font-size: 12px; color: #666; margin-top: 5px; }
-        .nav-controls { text-align: center; margin: 20px 0; }
-        .nav-btn, .today-btn { padding: 8px 16px; margin: 0 5px; border: none; border-radius: 5px; cursor: pointer; }
-        .nav-btn { background: #2196F3; color: white; }
-        .today-btn { background: #4CAF50; color: white; }
-        .nav-btn:hover, .today-btn:hover { opacity: 0.8; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
-        .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; }
-        .category-btn { margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
-        .category-btn:hover { opacity: 0.8; }
-        .form-group { margin-bottom: 15px; }
-        .form-control { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-        .btn { padding: 8px 16px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
-        .btn-primary { background: #2196F3; color: white; }
-        .btn-secondary { background: #6c757d; color: white; }
+        .time-slot { border: 1px solid #ccc; padding: 5px; min-height: 40px; cursor: pointer; }
+        .time-slot:hover { background-color: #f0f0f0; }
+        .filled { font-weight: bold; }
+        .legend-item { display: inline-block; margin: 5px; padding: 3px 6px; border-radius: 3px; color: white; }
+        .summary { background: #f5f5f5; padding: 15px; margin: 20px 0; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🎯 Focus Ring</h1>
-        <p>1日行動×集中タイムトラッカー</p>
-    </div>
-
-    <div class="nav-controls">
-        <button id="prev-day" class="nav-btn">← 前日</button>
-        <span id="current-date" style="font-size: 18px; font-weight: bold; margin: 0 20px;">2025-01-01</span>
-        <button id="next-day" class="nav-btn">翌日 →</button>
-        <button id="today-btn" class="today-btn">今日</button>
+    <h1>🎯 Focus Ring - Test Version</h1>
+    
+    <div>
+        <button id="prev-day">←</button>
+        <span id="current-date">2025-01-01</span>
+        <button id="next-day">→</button>
+        <button id="today-btn">今日</button>
     </div>
 
     <h2>📅 タイムグリッド (04:00-23:45)</h2>
-    <div style="margin-bottom: 10px;"><span id="filled-count">0</span>/80 ブロック入力済み</div>
+    <div><span id="filled-count">0</span>/80 ブロック入力済み</div>
     <div class="time-grid" id="time-grid"></div>
 
     <h2>📋 カテゴリ凡例</h2>
@@ -57,103 +33,49 @@
 
     <div class="summary">
         <h3>📊 今日のサマリ</h3>
-        <div class="summary-grid">
-            <div class="metric">
-                <div class="metric-value" id="focus-score">0.0</div>
-                <div class="metric-label">フォーカススコア</div>
-            </div>
-            <div class="metric">
-                <div class="metric-value" id="productive-hours">0.0h</div>
-                <div class="metric-label">生産的時間</div>
-            </div>
-            <div class="metric">
-                <div class="metric-value" id="deep-streak">0分</div>
-                <div class="metric-label">最大連続集中</div>
-            </div>
-            <div class="metric">
-                <div class="metric-value" id="distract-ratio">0%</div>
-                <div class="metric-label">妨害時間割合</div>
-            </div>
-        </div>
+        <div>フォーカススコア: <span id="focus-score">0.0</span></div>
+        <div>生産的時間: <span id="productive-hours">0.0h</span></div>
+        <div>最大連続集中: <span id="deep-streak">0分</span></div>
+        <div>妨害時間割合: <span id="distract-ratio">0%</span></div>
     </div>
 
-    <!-- カテゴリ選択モーダル -->
-    <div id="category-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>⏰ <span id="modal-time">04:00</span> のカテゴリ選択</h3>
-                <button class="modal-close" onclick="closeCategoryModal()">×</button>
-            </div>
-            <div id="all-categories"></div>
-        </div>
+    <!-- カテゴリ選択モーダル（簡易版） -->
+    <div id="category-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 2px solid #ccc; padding: 20px; z-index: 1000;">
+        <h3>⏰ <span id="modal-time">04:00</span> のカテゴリ選択</h3>
+        <button onclick="closeCategoryModal()">×</button>
+        <div id="all-categories"></div>
     </div>
 
-    <!-- 詳細編集モーダル -->
-    <div id="detail-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>📝 <span id="detail-time">04:00</span> の詳細編集</h3>
-                <button class="modal-close" onclick="closeDetailModal()">×</button>
-            </div>
-            <div class="form-group">
-                <label>カテゴリ:</label>
-                <select id="detail-category" class="form-control">
-                    <option value="">未選択</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>メモ:</label>
-                <textarea id="detail-memo" class="form-control" rows="3" placeholder="メモを入力..."></textarea>
-            </div>
-            <button id="detail-save" class="btn btn-primary">💾 保存</button>
-            <button onclick="closeDetailModal()" class="btn btn-secondary">キャンセル</button>
+    <!-- 詳細編集モーダル（簡易版） -->
+    <div id="detail-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 2px solid #ccc; padding: 20px; z-index: 1000;">
+        <h3>📝 <span id="detail-time">04:00</span> の詳細編集</h3>
+        <button onclick="closeDetailModal()">×</button>
+        <div>
+            <label>カテゴリ:</label>
+            <select id="detail-category">
+                <option value="">未選択</option>
+            </select>
         </div>
+        <div>
+            <label>メモ:</label>
+            <textarea id="detail-memo" rows="3"></textarea>
+        </div>
+        <button id="detail-save">💾 保存</button>
     </div>
 
     <script>
-        // 完全なカテゴリリスト（16個）
+        // 簡易版のスクリプトを直接埋め込み
         const CATEGORIES = [
             { code: "STUDY", label: "📚 勉強", weight: 3, color: "#4CAF50" },
             { code: "ENGLISH", label: "🌍 英語", weight: 4, color: "#2196F3" },
-            { code: "AI_LEARNING", label: "🤖 AI学習", weight: 4, color: "#9C27B0" },
             { code: "WORK_LOG", label: "💼 作業ログ", weight: 4, color: "#FF9800" },
-            { code: "BLOG", label: "✍️ ブログ", weight: 3, color: "#795548" },
-            { code: "WALK", label: "🐕 散歩", weight: 2, color: "#8BC34A" },
-            { code: "FARMING", label: "🌱 農作業", weight: 2, color: "#4CAF50" },
-            { code: "HOUSEWORK", label: "🏠 家事", weight: 1, color: "#607D8B" },
-            { code: "MANAGEMENT", label: "📋 管理", weight: 1, color: "#9E9E9E" },
-            { code: "HEALTH", label: "💪 健康", weight: 2, color: "#F44336" },
-            { code: "MEAL", label: "🍽️ 食事", weight: 0, color: "#FFC107" },
-            { code: "REST", label: "😴 休憩", weight: 0, color: "#CDDC39" },
-            { code: "SLEEP", label: "🛏️ 睡眠", weight: 0, color: "#3F51B5" },
             { code: "VIDEO", label: "📺 動画", weight: -2, color: "#E91E63" },
-            { code: "SNS", label: "📱 SNS", weight: -3, color: "#FF5722" },
-            { code: "WASTE", label: "❓ 無駄時間", weight: -4, color: "#424242" }
+            { code: "SNS", label: "📱 SNS", weight: -3, color: "#FF5722" }
         ];
 
         let currentDate = new Date().toISOString().split('T')[0];
         let selectedSlot = null;
 
-        // ローカルストレージ関数
-        function getStorageKey(date, slotIndex) {
-            return `focus_ring_${date}_${slotIndex}`;
-        }
-
-        function getBlockData(date, slotIndex) {
-            const key = getStorageKey(date, slotIndex);
-            const data = localStorage.getItem(key);
-            return data ? JSON.parse(data) : { category: null, memo: null };
-        }
-
-        function saveBlockData(date, slotIndex, data) {
-            const key = getStorageKey(date, slotIndex);
-            localStorage.setItem(key, JSON.stringify({
-                ...data,
-                updated_at: new Date().toISOString()
-            }));
-        }
-
-        // 時間フォーマット関数
         function formatTime(slotIndex) {
             const totalMinutes = 4 * 60 + slotIndex * 15;
             const hours = Math.floor(totalMinutes / 60) % 24;
@@ -161,42 +83,6 @@
             return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
         }
 
-        // カテゴリ取得
-        function getCategoryByCode(code) {
-            return CATEGORIES.find(cat => cat.code === code);
-        }
-
-        // サマリ計算
-        function calculateSummary(date) {
-            let productiveBlocks = 0;
-            let distractBlocks = 0;
-            let totalFilled = 0;
-            let focusScore = 0;
-
-            for (let i = 0; i < 80; i++) {
-                const blockData = getBlockData(date, i);
-                if (blockData.category) {
-                    totalFilled++;
-                    const category = getCategoryByCode(blockData.category);
-                    if (category) {
-                        if (category.weight > 0) productiveBlocks++;
-                        if (category.weight < 0) distractBlocks++;
-                        focusScore += category.weight;
-                    }
-                }
-            }
-
-            return {
-                focus_score: focusScore,
-                productive_blocks: productiveBlocks,
-                distract_blocks: distractBlocks,
-                productive_hours: (productiveBlocks * 0.25),
-                distract_ratio: totalFilled > 0 ? (distractBlocks / totalFilled) : 0,
-                deep_streak_max: Math.max(1, Math.ceil(productiveBlocks / 4))
-            };
-        }
-
-        // タイムグリッド生成
         function generateTimeGrid() {
             const grid = document.getElementById('time-grid');
             grid.innerHTML = '';
@@ -204,14 +90,12 @@
             for (let i = 0; i < 80; i++) {
                 const slot = document.createElement('div');
                 slot.className = 'time-slot';
-                slot.innerHTML = `<div style="font-size: 10px; color: #666;">${formatTime(i)}</div><div class="block-content"></div>`;
+                slot.textContent = formatTime(i);
                 slot.onclick = () => openCategoryModal(i);
-                slot.oncontextmenu = (e) => { e.preventDefault(); openDetailModal(i); };
                 grid.appendChild(slot);
             }
         }
 
-        // カテゴリ凡例生成
         function generateCategoryLegend() {
             const legend = document.getElementById('category-legend');
             legend.innerHTML = '';
@@ -220,49 +104,11 @@
                 const item = document.createElement('span');
                 item.className = 'legend-item';
                 item.style.backgroundColor = cat.color;
-                item.textContent = `${cat.label} (${cat.weight > 0 ? '+' : ''}${cat.weight})`;
+                item.textContent = cat.label + ' (' + (cat.weight > 0 ? '+' : '') + cat.weight + ')';
                 legend.appendChild(item);
             });
         }
 
-        // グリッド更新
-        function updateTimeGrid() {
-            const slots = document.querySelectorAll('.time-slot');
-            let filledCount = 0;
-
-            slots.forEach((slot, index) => {
-                const blockData = getBlockData(currentDate, index);
-                const blockContent = slot.querySelector('.block-content');
-                
-                if (blockData.category) {
-                    filledCount++;
-                    const category = getCategoryByCode(blockData.category);
-                    if (category) {
-                        slot.style.backgroundColor = category.color;
-                        slot.classList.add('filled');
-                        blockContent.textContent = category.label;
-                    }
-                } else {
-                    slot.style.backgroundColor = 'white';
-                    slot.classList.remove('filled');
-                    blockContent.textContent = '';
-                }
-            });
-
-            document.getElementById('filled-count').textContent = filledCount;
-        }
-
-        // サマリ更新
-        function updateSummary() {
-            const summary = calculateSummary(currentDate);
-            
-            document.getElementById('focus-score').textContent = summary.focus_score.toFixed(1);
-            document.getElementById('productive-hours').textContent = summary.productive_hours.toFixed(1) + 'h';
-            document.getElementById('deep-streak').textContent = (summary.deep_streak_max * 15) + '分';
-            document.getElementById('distract-ratio').textContent = (summary.distract_ratio * 100).toFixed(0) + '%';
-        }
-
-        // モーダル機能
         function openCategoryModal(slotIndex) {
             selectedSlot = slotIndex;
             document.getElementById('modal-time').textContent = formatTime(slotIndex);
@@ -272,9 +118,10 @@
             
             CATEGORIES.forEach(cat => {
                 const btn = document.createElement('button');
-                btn.className = 'category-btn';
                 btn.textContent = cat.label;
                 btn.style.backgroundColor = cat.color;
+                btn.style.color = 'white';
+                btn.style.margin = '5px';
                 btn.onclick = () => selectCategory(cat.code);
                 container.appendChild(btn);
             });
@@ -283,99 +130,27 @@
         }
 
         function selectCategory(code) {
-            saveBlockData(currentDate, selectedSlot, { category: code });
-            updateTimeGrid();
-            updateSummary();
+            alert('カテゴリ ' + code + ' を選択しました（スロット' + selectedSlot + '）');
             closeCategoryModal();
         }
 
         window.closeCategoryModal = function() {
             document.getElementById('category-modal').style.display = 'none';
-            selectedSlot = null;
-        }
-
-        function openDetailModal(slotIndex) {
-            selectedSlot = slotIndex;
-            document.getElementById('detail-time').textContent = formatTime(slotIndex);
-            
-            const blockData = getBlockData(currentDate, slotIndex);
-            document.getElementById('detail-category').value = blockData.category || '';
-            document.getElementById('detail-memo').value = blockData.memo || '';
-            
-            document.getElementById('detail-modal').style.display = 'block';
         }
 
         window.closeDetailModal = function() {
             document.getElementById('detail-modal').style.display = 'none';
-            selectedSlot = null;
-        }
-
-        // 日付更新
-        function updateCurrentDate() {
-            document.getElementById('current-date').textContent = currentDate;
         }
 
         // 初期化
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🎯 Focus Ring Working Version Loading...');
+            console.log('🎯 Focus Ring Test Version Loading...');
             
-            // UI生成
+            document.getElementById('current-date').textContent = currentDate;
             generateTimeGrid();
             generateCategoryLegend();
             
-            // 詳細モーダルのカテゴリ選択肢を生成
-            const detailSelect = document.getElementById('detail-category');
-            CATEGORIES.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.code;
-                option.textContent = cat.label;
-                detailSelect.appendChild(option);
-            });
-            
-            // イベントリスナー
-            document.getElementById('prev-day').onclick = () => {
-                const date = new Date(currentDate);
-                date.setDate(date.getDate() - 1);
-                currentDate = date.toISOString().split('T')[0];
-                updateCurrentDate();
-                updateTimeGrid();
-                updateSummary();
-            };
-            
-            document.getElementById('next-day').onclick = () => {
-                const date = new Date(currentDate);
-                date.setDate(date.getDate() + 1);
-                currentDate = date.toISOString().split('T')[0];
-                updateCurrentDate();
-                updateTimeGrid();
-                updateSummary();
-            };
-            
-            document.getElementById('today-btn').onclick = () => {
-                currentDate = new Date().toISOString().split('T')[0];
-                updateCurrentDate();
-                updateTimeGrid();
-                updateSummary();
-            };
-            
-            document.getElementById('detail-save').onclick = () => {
-                if (selectedSlot !== null) {
-                    const category = document.getElementById('detail-category').value || null;
-                    const memo = document.getElementById('detail-memo').value || null;
-                    
-                    saveBlockData(currentDate, selectedSlot, { category, memo });
-                    updateTimeGrid();
-                    updateSummary();
-                    closeDetailModal();
-                }
-            };
-            
-            // 初期表示
-            updateCurrentDate();
-            updateTimeGrid();
-            updateSummary();
-            
-            console.log('✅ Focus Ring Working Version Ready!');
+            console.log('✅ Focus Ring Test Version Ready!');
         });
     </script>
 </body>
