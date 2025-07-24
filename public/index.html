@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Ring - 1日行動×集中タイムトラッカー</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">🎯 Focus Ring</h1>
+            <p class="tagline">1日行動×集中タイムトラッカー</p>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main">
+        <div class="container">
+            <!-- 日付ナビゲーション -->
+            <div class="date-nav">
+                <button id="prev-day" class="nav-btn">←</button>
+                <div class="date-display">
+                    <span id="current-date">2024-01-01</span>
+                    <button id="today-btn" class="today-btn">今日</button>
+                </div>
+                <button id="next-day" class="nav-btn">→</button>
+            </div>
+
+            <!-- 2カラムレイアウト -->
+            <div class="content-grid">
+                <!-- 左側：タイムグリッド -->
+                <div class="left-panel">
+                    <div class="grid-header">
+                        <h2>📅 タイムグリッド (04:00-23:45)</h2>
+                        <div class="grid-stats">
+                            <span id="filled-count">0</span>/80 ブロック入力済み
+                        </div>
+                    </div>
+
+                    <!-- 80マスグリッド -->
+                    <div class="time-grid" id="time-grid">
+                        <!-- JavaScriptで動的生成 -->
+                    </div>
+
+                    <!-- カテゴリ凡例 -->
+                    <div class="category-legend">
+                        <h3>📋 カテゴリ凡例</h3>
+                        <div class="legend-grid" id="category-legend">
+                            <!-- JavaScriptで動的生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側：サマリパネル -->
+                <div class="right-panel">
+                    <!-- 今日のサマリ -->
+                    <div class="summary-card">
+                        <h3>📊 今日のサマリ</h3>
+                        <div class="summary-grid">
+                            <div class="metric">
+                                <div class="metric-value" id="focus-score">0.0</div>
+                                <div class="metric-label">フォーカススコア</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="productive-hours">0.0h</div>
+                                <div class="metric-label">生産的時間</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="deep-streak">0分</div>
+                                <div class="metric-label">最大連続集中</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="distract-ratio">0%</div>
+                                <div class="metric-label">妨害時間割合</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- チャート -->
+                    <div class="chart-card">
+                        <h3>📈 活動分布</h3>
+                        <div class="chart-container">
+                            <canvas id="activityChart" width="300" height="200"></canvas>
+                        </div>
+                        <div class="chart-toggle">
+                            <button id="chart-daily" class="chart-btn active">今日</button>
+                            <button id="chart-weekly" class="chart-btn">週間推移</button>
+                        </div>
+                    </div>
+
+                    <!-- 改善提案 -->
+                    <div class="suggestions-card">
+                        <h3>💡 改善提案</h3>
+                        <div class="suggestions-content">
+                            <div class="summary-text" id="suggestion-summary">
+                                データを入力すると改善提案が表示されます
+                            </div>
+                            <ul class="suggestions-list" id="suggestions-list">
+                                <!-- JavaScriptで動的生成 -->
+                            </ul>
+                        </div>
+                        <button id="refresh-suggestions" class="refresh-btn">🔄 提案を更新</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- カテゴリ選択モーダル -->
+    <div class="modal" id="category-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⏰ <span id="modal-time">04:00</span> のカテゴリ選択</h3>
+                <button class="modal-close" id="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- 最近使用カテゴリ -->
+                <div class="recent-categories">
+                    <h4>🔥 最近使用</h4>
+                    <div class="category-buttons" id="recent-categories">
+                        <!-- JavaScriptで動的生成 -->
+                    </div>
+                </div>
+
+                <!-- 全カテゴリ -->
+                <div class="all-categories">
+                    <h4>📂 全カテゴリ</h4>
+                    <div class="category-buttons" id="all-categories">
+                        <!-- JavaScriptで動的生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 詳細編集モーダル -->
+    <div class="modal" id="detail-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📝 <span id="detail-time">04:00</span> の詳細編集</h3>
+                <button class="modal-close" id="detail-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="detail-category">カテゴリ:</label>
+                    <select id="detail-category" class="form-control">
+                        <option value="">未選択</option>
+                        <!-- JavaScriptで動的生成 -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="detail-focus">集中度 (1-5):</label>
+                    <div class="focus-buttons">
+                        <button class="focus-btn" data-focus="1">1</button>
+                        <button class="focus-btn" data-focus="2">2</button>
+                        <button class="focus-btn" data-focus="3">3</button>
+                        <button class="focus-btn" data-focus="4">4</button>
+                        <button class="focus-btn" data-focus="5">5</button>
+                        <button class="focus-btn" data-focus="0">クリア</button>
+                    </div>
+                    <div class="focus-display" id="detail-focus-display">未設定</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="detail-memo">メモ:</label>
+                    <textarea id="detail-memo" class="form-control" rows="3" maxlength="200" 
+                              placeholder="メモを入力..."></textarea>
+                    <div class="char-count">
+                        <span id="memo-count">0</span>/200
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="detail-save" class="btn btn-primary">💾 保存</button>
+                    <button id="detail-clear" class="btn btn-secondary">🗑️ クリア</button>
+                    <button id="detail-cancel" class="btn btn-secondary">キャンセル</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ローディング表示 -->
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">読み込み中...</div>
+    </div>
+
+    <!-- 通知バナー -->
+    <div class="notification" id="notification">
+        <div class="notification-content">
+            <span class="notification-icon">ℹ️</span>
+            <span class="notification-text">メッセージ</span>
+            <button class="notification-close">×</button>
+        </div>
+    </div>
+
+    <!-- フッター -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Focus Ring - 1日行動×集中タイムトラッカー</p>
+            <div class="footer-links">
+                <a href="/docs" target="_blank">📚 API Docs</a>
+                <a href="/api/stats" target="_blank">📊 System Stats</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
